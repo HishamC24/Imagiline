@@ -92,29 +92,12 @@ if ('launchQueue' in window && 'files' in LaunchParams.prototype) {
 // =========================
 // ==== LIVE CAMERA FEED ====
 // =========================
-const liveFeed = document.getElementById("live-feed");
-const video = document.getElementById("camera-video");
-const startBtn = document.getElementById("start-camera");
+const liveFeedVideo = document.getElementById("live-feed");
 
-startBtn.addEventListener("click", async () => {
-    try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        video.srcObject = stream;
-        startBtn.style.display = "none";
-
-        const ctx = liveFeed.getContext("2d");
-
-        function drawFrame() {
-            if (video.readyState === video.HAVE_ENOUGH_DATA) {
-                liveFeed.width = video.videoWidth;
-                liveFeed.height = video.videoHeight;
-                ctx.drawImage(video, 0, 0, liveFeed.width, liveFeed.height);
-            }
-            requestAnimationFrame(drawFrame);
-        }
-        drawFrame();
-    } catch (err) {
-        alert("Camera permission denied or not available.");
-        console.error(err);
-    }
-});
+navigator.mediaDevices.getUserMedia({ video: true })
+    .then((stream) => {
+        liveFeedVideo.srcObject = stream;
+    })
+    .catch((error) => {
+        console.error("Error accessing the camera: ", error);
+    });

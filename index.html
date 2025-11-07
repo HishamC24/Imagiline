@@ -18,12 +18,9 @@
   </head>
   <body>
     <input type="file" id="image-upload" accept="image/*" />
-    <button id="start-camera">Start Camera</button>
 
     <img id="image-preview" src="" />
-    <canvas id="live-feed"></canvas>
-
-    <video id="camera-video" autoplay playsinline style="display: none"></video>
+    <video id="live-feed" autoplay playsinline></video>
 
     <button id="install-btn" onclick="installPWA()" style="display: none">Install App</button>
 
