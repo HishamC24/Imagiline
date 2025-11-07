@@ -31,8 +31,24 @@ window.addEventListener("appinstalled", () => {
 // =========================
 // ===== IMAGE UPLOAD =======
 // =========================
-const imageUploadInput = document.getElementById("image-upload");
+const popupFileLabel = document.getElementById("popupFileLabel");
 const imagePreview = document.getElementById("image-preview");
+const fileInput = document.getElementById("fileInput");
+
+popupFileLabel.addEventListener("click", (e) => {
+    if (!(video.src && video.style.display !== "none")) {
+        fileInput.value = "";
+    }
+});
+
+fileInput.addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (file && file.type.startsWith("image/")) {
+        showImageFile(file, true); // Show and save image to preview
+    } else {
+        showImageFile(null, false); // Clear preview if not an image
+    }
+});
 
 function showImageFile(file, alsoSave = true) {
     if (!file) {
@@ -59,19 +75,18 @@ function showImageFile(file, alsoSave = true) {
     const cachedImage = localStorage.getItem("persistedImageData");
     if (cachedImage) {
         imagePreview.src = cachedImage;
-        imagePreview.style.display = "block";
+        // imagePreview.style.display = "block";
     } else {
-        imagePreview.style.display = "none";
+        // imagePreview.style.display = "none";
         imagePreview.src = "";
     }
 })();
 
-if (imageUploadInput) {
-    imageUploadInput.addEventListener("change", (e) => {
-        const file = e.target.files && e.target.files[0];
-        showImageFile(file, true);
-    });
-}
+
+// imageUploadInput.addEventListener("change", (e) => {
+//     const file = e.target.files && e.target.files[0];
+//     showImageFile(file, true);
+// });
 
 if ('launchQueue' in window && 'files' in LaunchParams.prototype) {
     window.launchQueue.setConsumer((launchParams) => {
