@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Imagiline</title>
+
+    <link rel="shortcut icon" type="image/png" href="Icons/Imagiline.png" />
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#00ff80" />
+    <meta name="description" content="An app to align your camera to a location you took a previous photo in" />
+
+    <link rel="stylesheet" href="index.css" />
+  </head>
+  <body>
+    <input type="file" id="image-upload" accept="image/*" />
+    <button id="start-camera">Start Camera</button>
+
+    <img id="image-preview" src="" />
+    <canvas id="live-feed"></canvas>
+
+    <video id="camera-video" autoplay playsinline style="display: none"></video>
+
+    <button id="install-btn" onclick="installPWA()" style="display: none">Install App</button>
+
+    <script type="module">
+      import { squircleObserver } from "https://esm.sh/corner-smoothing";
+
+      // Make applySquircles globally accessible
+      window.applySquircles = function applySquircles() {
+        // Query all elements on page
+        const allElements = document.querySelectorAll("*");
+
+        allElements.forEach((el) => {
+          const style = getComputedStyle(el);
+          const radius = parseFloat(style.borderRadius);
+
+          // Only apply if it actually has a visible border radius
+          if (radius > 0) {
+            squircleObserver(el, {
+              cornerRadius: radius,
+              cornerSmoothing: 0.6,
+              style: {
+                fill: style.backgroundColor,
+              },
+            });
+          }
+        });
+      };
+
+      // Wait for everything to render first
+      window.addEventListener("load", window.applySquircles);
+    </script>
+    <script src="https://cbrandolino.github.io/camvas/javascripts/camvas.js"></script>
+    <script defer src="index.js"></script>
+  </body>
+</html>
