@@ -37,8 +37,6 @@ const fileInput = document.getElementById("fileInput");
 const removeImageBtn = document.getElementById("removeImage");
 
 popupFileLabel.addEventListener("click", (e) => {
-    // The original code refers to a "video" variable which isn't defined here.
-    // Let's disable the value for fileInput every time, which is safe.
     fileInput.value = "";
 });
 
@@ -53,9 +51,9 @@ fileInput.addEventListener("change", (e) => {
                 imagePreview.removeAttribute("style");
             }
         }
-        showImageFile(file, true); // Show and save image to preview
+        showImageFile(file, true);
     } else {
-        showImageFile(null, false); // Clear preview if not an image
+        showImageFile(null, false);
     }
 });
 
@@ -84,16 +82,13 @@ function showImageFile(file, alsoSave = true) {
     const cachedImage = localStorage.getItem("persistedImageData");
     if (cachedImage) {
         imagePreview.src = cachedImage;
-        // if (imagePreview.hasAttribute("style")) imagePreview.removeAttribute("style");
         imagePreview.style.display = "block";
     } else {
-        // imagePreview.style.display = "none";
         imagePreview.src = "";
         imagePreview.style.display = "none";
     }
 })();
 
-// Implement Remove Image Functionality
 if (removeImageBtn) {
     removeImageBtn.addEventListener("click", () => {
         imagePreview.src = "";
@@ -134,32 +129,64 @@ navigator.mediaDevices.getUserMedia({ video: true })
         console.error("Error accessing the camera: ", error);
     });
 
+function showToast(message) {
+    let toast = document.getElementById("camera-toast");
+    if (toast) toast.remove();
+
+    toast = document.createElement("div");
+    toast.id = "camera-toast";
+    toast.textContent = message;
+    Object.assign(toast.style, {
+        position: "fixed",
+        left: "50%",
+        bottom: "1rem",
+        transform: "translateX(-50%)",
+        background: "rgba(0,0,0,0.5)",
+        color: "#fff",
+        fontSize: "1rem",
+        fontWeight: "bold",
+        padding: "1rem 1.5rem",
+        borderRadius: "1.5rem",
+        zIndex: 10000,
+        opacity: "0",
+        transition: "opacity 0.2s",
+        pointerEvents: "none",
+        textAlign: "center"
+    });
+    document.body.appendChild(toast);
+    setTimeout(() => {
+        toast.style.opacity = "1";
+    }, 10);
+
+    setTimeout(() => {
+        toast.style.opacity = "0";
+        setTimeout(() => {
+            if (toast.parentNode) toast.remove();
+        }, 200);
+    }, 3000);
+}
 
 rotateCameraBtn.addEventListener("click", () => {
     console.log("Rotating camera");
-    // Implements flipping/rotating through available cameras (devices)
-    // We'll keep track of the active camera's deviceId and switch on each click
     (async function () {
         if (!window.availableVideoDevices) {
-            // Query all video input devices once
             const devices = await navigator.mediaDevices.enumerateDevices();
             window.availableVideoDevices = devices.filter(device => device.kind === "videoinput");
             window.currentVideoDeviceIndex = 0;
         }
 
-        // No camera devices
         if (window.availableVideoDevices.length < 1) return;
 
-        // Move to next camera index
         window.currentVideoDeviceIndex = (window.currentVideoDeviceIndex + 1) % window.availableVideoDevices.length;
-        const nextDeviceId = window.availableVideoDevices[window.currentVideoDeviceIndex].deviceId;
+        const nextDevice = window.availableVideoDevices[window.currentVideoDeviceIndex];
+        const nextDeviceId = nextDevice.deviceId;
 
-        // Stop any running video streams before switching
+        showToast(nextDevice.label || "Unknown Camera");
+
         if (liveFeedVideo.srcObject) {
             liveFeedVideo.srcObject.getTracks().forEach(track => track.stop());
         }
 
-        // Try to get stream from the next camera
         try {
             const newStream = await navigator.mediaDevices.getUserMedia({ video: { deviceId: { exact: nextDeviceId } } });
             liveFeedVideo.srcObject = newStream;
