@@ -29,21 +29,30 @@ window.addEventListener("appinstalled", () => {
 
 
 // =========================
-// ===== IMAGE UPLOAD =======
+// ===== IMAGE UPLOAD/REMOVE =======
 // =========================
 const popupFileLabel = document.getElementById("popupFileLabel");
 const imagePreview = document.getElementById("image-preview");
 const fileInput = document.getElementById("fileInput");
+const removeImageBtn = document.getElementById("removeImage");
 
 popupFileLabel.addEventListener("click", (e) => {
-    if (!(video.src && video.style.display !== "none")) {
-        fileInput.value = "";
-    }
+    // The original code refers to a "video" variable which isn't defined here.
+    // Let's disable the value for fileInput every time, which is safe.
+    fileInput.value = "";
 });
 
 fileInput.addEventListener("change", (e) => {
     const file = e.target.files[0];
     if (file && file.type.startsWith("image/")) {
+        if (!imagePreview.src) {
+            if (imagePreview.style.display === "none") {
+                imagePreview.style.display = "";
+            }
+            if (imagePreview.getAttribute("style") && imagePreview.getAttribute("style").trim() === "display: none") {
+                imagePreview.removeAttribute("style");
+            }
+        }
         showImageFile(file, true); // Show and save image to preview
     } else {
         showImageFile(null, false); // Clear preview if not an image
@@ -75,14 +84,24 @@ function showImageFile(file, alsoSave = true) {
     const cachedImage = localStorage.getItem("persistedImageData");
     if (cachedImage) {
         imagePreview.src = cachedImage;
-        // imagePreview.style.display = "block";
+        // if (imagePreview.hasAttribute("style")) imagePreview.removeAttribute("style");
+        imagePreview.style.display = "block";
     } else {
         // imagePreview.style.display = "none";
         imagePreview.src = "";
+        imagePreview.style.display = "none";
     }
 })();
 
-
+// Implement Remove Image Functionality
+if (removeImageBtn) {
+    removeImageBtn.addEventListener("click", () => {
+        imagePreview.src = "";
+        imagePreview.style.display = "none";
+        localStorage.removeItem("persistedImageData");
+        fileInput.value = "";
+    });
+}
 
 
 if ('launchQueue' in window && 'files' in LaunchParams.prototype) {
