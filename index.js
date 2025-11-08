@@ -83,10 +83,7 @@ function showImageFile(file, alsoSave = true) {
 })();
 
 
-// imageUploadInput.addEventListener("change", (e) => {
-//     const file = e.target.files && e.target.files[0];
-//     showImageFile(file, true);
-// });
+
 
 if ('launchQueue' in window && 'files' in LaunchParams.prototype) {
     window.launchQueue.setConsumer((launchParams) => {
@@ -108,6 +105,7 @@ if ('launchQueue' in window && 'files' in LaunchParams.prototype) {
 // ==== LIVE CAMERA FEED ====
 // =========================
 const liveFeedVideo = document.getElementById("live-feed");
+const rotateCameraBtn = document.getElementById("rotateCameraBtn");
 
 navigator.mediaDevices.getUserMedia({ video: true })
     .then((stream) => {
@@ -116,3 +114,38 @@ navigator.mediaDevices.getUserMedia({ video: true })
     .catch((error) => {
         console.error("Error accessing the camera: ", error);
     });
+
+
+rotateCameraBtn.addEventListener("click", () => {
+    console.log("Rotating camera");
+    // Implements flipping/rotating through available cameras (devices)
+    // We'll keep track of the active camera's deviceId and switch on each click
+    (async function () {
+        if (!window.availableVideoDevices) {
+            // Query all video input devices once
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            window.availableVideoDevices = devices.filter(device => device.kind === "videoinput");
+            window.currentVideoDeviceIndex = 0;
+        }
+
+        // No camera devices
+        if (window.availableVideoDevices.length < 1) return;
+
+        // Move to next camera index
+        window.currentVideoDeviceIndex = (window.currentVideoDeviceIndex + 1) % window.availableVideoDevices.length;
+        const nextDeviceId = window.availableVideoDevices[window.currentVideoDeviceIndex].deviceId;
+
+        // Stop any running video streams before switching
+        if (liveFeedVideo.srcObject) {
+            liveFeedVideo.srcObject.getTracks().forEach(track => track.stop());
+        }
+
+        // Try to get stream from the next camera
+        try {
+            const newStream = await navigator.mediaDevices.getUserMedia({ video: { deviceId: { exact: nextDeviceId } } });
+            liveFeedVideo.srcObject = newStream;
+        } catch (e) {
+            console.error("Failed to switch camera:", e);
+        }
+    })();
+});

@@ -25,8 +25,8 @@
   padding: 0px;
   margin: 0px;
   -webkit-tap-highlight-color: transparent;
-  text-box-trim: trim-both;
-  text-box-edge: cap alphabetic;
+  /* text-box-trim: trim-both;
+  text-box-edge: cap alphabetic; */
 }
 
 @font-face {
@@ -58,18 +58,20 @@ body {
 
 nav {
   position: fixed;
-  top: 0;
+  top: 50%;
   right: 0;
-  /* width: fit-content;
-  height: fit-content; */
+  transform: translateY(-50%);
+  width: fit-content;
+  height: fit-content;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   overflow: hidden;
+  z-index: 1000;
 }
 
-#popupFileLabel > svg {
+svg {
   width: 2rem;
   height: 2rem;
 }
