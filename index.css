@@ -15,8 +15,7 @@
 
 :root {
   --main-color: #000000;
-  --card-color: #333333;
-  --accent-green: #00ff80;
+  --accent: #ff4040;
 }
 
 * {
@@ -51,7 +50,7 @@ html {
 
 body {
   font-family: "San Fransisco", sans-serif;
-  background-color: var(--card-color);
+  background-color: var(--main-color);
   margin: 0px;
   padding: 0px;
 }
@@ -92,7 +91,7 @@ svg {
   top: 0;
   left: 0;
   width: 100vw;
-  height: 100vh;
+  height: 100dvh;
   display: flex;
   justify-content: center;
   align-items: center;
