@@ -1,33 +1,3 @@
-
-// =========================
-// ===== PWA INSTALL =======
-// =========================
-if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("sw.js");
-}
-
-let deferredPrompt = null;
-const installBtn = document.getElementById("install-btn");
-
-window.addEventListener("beforeinstallprompt", (e) => {
-    e.preventDefault();
-    deferredPrompt = e;
-    installBtn.style.display = "";
-});
-
-installBtn.addEventListener("click", async () => {
-    if (!deferredPrompt) return;
-    installBtn.style.display = "none";
-    deferredPrompt.prompt();
-    await deferredPrompt.userChoice;
-    deferredPrompt = null;
-});
-
-window.addEventListener("appinstalled", () => {
-    installBtn.style.display = "none";
-});
-
-
 // =========================
 // ===== IMAGE UPLOAD/REMOVE =======
 // =========================

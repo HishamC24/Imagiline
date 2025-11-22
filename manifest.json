@@ -1,5 +1,5 @@
 {
-  "background_color": "#000000",
+  "background_color": "#ff4040",
   "description": "An app to align your camera to a location you took a previous photo in",
   "dir": "ltr",
   "display": "fullscreen",

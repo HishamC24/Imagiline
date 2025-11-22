@@ -7,10 +7,12 @@
 
     <link rel="shortcut icon" type="image/png" href="Icons/Imagiline.png" />
     <link rel="manifest" href="manifest.json" />
-    <meta name="theme-color" content="#00ff80" />
+    <meta name="theme-color" content="#ff4040" />
     <meta name="description" content="An app to align your camera to a location you took a previous photo in" />
-
     <link rel="stylesheet" href="index.css" />
+
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <!-- <script src="//cdn.jsdelivr.net/npm/eruda"></script>
     <script>
       eruda.init();
@@ -84,21 +86,18 @@
       <img id="image-preview" src="" style="display: none" />
     </div>
 
-    <button id="install-btn" onclick="installPWA()" style="display: none">Install App</button>
+    <div id="install-btn">Install PWA</div>
 
+    <script src="index.js"></script>
+    <script src="pwa.js"></script>
     <script type="module">
       import { squircleObserver } from "https://esm.sh/corner-smoothing";
 
-      // Make applySquircles globally accessible
       window.applySquircles = function applySquircles() {
-        // Query all elements on page
         const allElements = document.querySelectorAll("*");
-
         allElements.forEach((el) => {
           const style = getComputedStyle(el);
           const radius = parseFloat(style.borderRadius);
-
-          // Only apply if it actually has a visible border radius
           if (radius > 0) {
             squircleObserver(el, {
               cornerRadius: radius,
@@ -111,10 +110,8 @@
         });
       };
 
-      // Wait for everything to render first
       window.addEventListener("load", window.applySquircles);
     </script>
-    <script src="https://cbrandolino.github.io/camvas/javascripts/camvas.js"></script>
-    <script defer src="index.js"></script>
+    <!-- <script src="https://cbrandolino.github.io/camvas/javascripts/camvas.js"></script> -->
   </body>
 </html>
