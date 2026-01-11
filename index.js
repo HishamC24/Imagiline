@@ -112,17 +112,119 @@ window.addEventListener('resize', updateOrientation);
 
 const cameraPreview = document.getElementById("cameraPreview");
 
-navigator.mediaDevices.getUserMedia({ video: true })
-    .then((stream) => {
-        cameraPreview.srcObject = stream;
-    })
-    .catch((error) => {
-        console.error("Error accessing the camera: ", error);
-    });
-
-// Keep track of available cameras and the current camera index
+// ======== CAMERA FLIP SUPPORT ========
 let availableVideoDevices = [];
 let currentVideoDeviceIndex = 0;
+let isFrontCamera = false;
+
+// Try to detect if a device is front camera based on its label.
+// This is heuristic as getUserMedia constraints aren't always respected across browsers.
+function detectIfFrontCamera(device) {
+    if (!device || !device.label) return false;
+    // Common cues in Android/iOS/PC, not perfect but standard
+    // Also include "user" for web standard, though not always presented
+    const label = device.label.toLowerCase();
+    if (
+        label.includes("front") ||
+        label.includes("user") ||
+        label.includes("facing") && !label.includes("back") && !label.includes("rear")
+    ) {
+        return true;
+    }
+    return false;
+}
+
+// To control camera flipping visually
+function setCameraMirroring(frontCamera) {
+    // Flip <video> via CSS transform (mirrors live preview for user)
+    cameraPreview.style.transform = frontCamera ? 'scaleX(-1)' : '';
+    // Optionally make canvas replication (blur background) match
+    window._blurCanvasMirrored = !!frontCamera;
+}
+
+// Create and append the gridlines canvas (overlay for grid lines)
+let gridLinesVisible = false;
+const gridCanvas = document.createElement('canvas');
+gridCanvas.id = "gridLinesOverlay";
+Object.assign(gridCanvas.style, {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    width: "100%",
+    height: "100%",
+    pointerEvents: "none",
+    zIndex: 2000,
+    display: "none"
+});
+cameraPreview.parentNode.appendChild(gridCanvas);
+
+function resizeGridCanvas() {
+    gridCanvas.width = cameraPreview.clientWidth;
+    gridCanvas.height = cameraPreview.clientHeight;
+    gridCanvas.style.width = cameraPreview.clientWidth + "px";
+    gridCanvas.style.height = cameraPreview.clientHeight + "px";
+    if (gridLinesVisible) drawGridLines();
+}
+
+window.addEventListener("resize", resizeGridCanvas);
+
+// Rule of thirds grid drawing
+function drawGridLines() {
+    const ctx = gridCanvas.getContext("2d");
+    ctx.clearRect(0, 0, gridCanvas.width, gridCanvas.height);
+    ctx.save();
+    ctx.strokeStyle = "rgba(256,256,256,0.75)";
+    ctx.lineWidth = 2;
+
+    const w = gridCanvas.width;
+    const h = gridCanvas.height;
+
+    // 2 verticals at 1/3 and 2/3
+    for (let i = 1; i <= 2; i++) {
+        const x = (w / 3) * i;
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, h);
+        ctx.stroke();
+    }
+
+    // 2 horizontals at 1/3 and 2/3
+    for (let i = 1; i <= 2; i++) {
+        const y = (h / 3) * i;
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(w, y);
+        ctx.stroke();
+    }
+    ctx.restore();
+}
+
+function toggleGridLines() {
+    gridLinesVisible = !gridLinesVisible;
+    if (gridLinesVisible) {
+        resizeGridCanvas();
+        gridCanvas.style.display = "block";
+        drawGridLines();
+    } else {
+        gridCanvas.style.display = "none";
+    }
+}
+
+// Listen for the gridLinesToggle SVG click
+document.getElementById("gridLinesToggle").addEventListener("click", toggleGridLines);
+
+// On resize, redraw grid lines if enabled
+window.addEventListener("resize", function () {
+    if (gridLinesVisible) resizeGridCanvas();
+});
+
+// When preview video changes size (if responsive), keep grid overlay in sync
+const cameraPreviewResizeObserver = new ResizeObserver(() => {
+    if (gridLinesVisible) resizeGridCanvas();
+});
+cameraPreviewResizeObserver.observe(cameraPreview);
+
+// =========================
 
 // Toast function
 function showToast(message) {
@@ -171,6 +273,7 @@ async function getAvailableVideoDevices() {
     return devices.filter(device => device.kind === "videoinput");
 }
 
+// Improved getUserMedia to set camera flipping
 async function switchToCamera(deviceId) {
     if (cameraPreview.srcObject) {
         cameraPreview.srcObject.getTracks().forEach(track => track.stop());
@@ -178,10 +281,64 @@ async function switchToCamera(deviceId) {
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: { deviceId: { exact: deviceId } } });
         cameraPreview.srcObject = stream;
+
+        // After switching camera, set isFrontCamera flag
+        // Find the device in our list
+        let matchingDevice = null;
+        for (const device of availableVideoDevices) {
+            if (device.deviceId === deviceId) {
+                matchingDevice = device;
+                break;
+            }
+        }
+        isFrontCamera = detectIfFrontCamera(matchingDevice);
+
+        setCameraMirroring(isFrontCamera);
     } catch (e) {
         console.error("Failed to switch camera:", e);
     }
 }
+
+// Initial load: find and select default camera
+(async function initializeCamera() {
+    availableVideoDevices = await getAvailableVideoDevices();
+    // Heuristics: try to find a front camera first
+    let preferredIdx = 0;
+    for (let i = 0; i < availableVideoDevices.length; ++i) {
+        if (detectIfFrontCamera(availableVideoDevices[i])) {
+            preferredIdx = i;
+            break;
+        }
+    }
+    currentVideoDeviceIndex = preferredIdx;
+    const device = availableVideoDevices[currentVideoDeviceIndex];
+    if (device) {
+        isFrontCamera = detectIfFrontCamera(device);
+        setCameraMirroring(isFrontCamera);
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { deviceId: { exact: device.deviceId } } });
+            cameraPreview.srcObject = stream;
+        } catch (error) {
+            // fallback: try default
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then((stream) => {
+                    cameraPreview.srcObject = stream;
+                })
+                .catch((error) => {
+                    console.error("Error accessing the camera: ", error);
+                });
+        }
+    } else {
+        // fallback: try default
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then((stream) => {
+                cameraPreview.srcObject = stream;
+            })
+            .catch((error) => {
+                console.error("Error accessing the camera: ", error);
+            });
+    }
+})();
 
 document.getElementById("rotateCamera").addEventListener("click", async () => {
     if (!availableVideoDevices.length) {
@@ -195,6 +352,7 @@ document.getElementById("rotateCamera").addEventListener("click", async () => {
     const nextDevice = availableVideoDevices[currentVideoDeviceIndex];
     showToast(nextDevice.label || "Unknown Camera");
     await switchToCamera(nextDevice.deviceId);
+    setCameraMirroring(detectIfFrontCamera(nextDevice));
 });
 
 document.getElementById("imageUpload").addEventListener("click", async () => {
@@ -256,8 +414,16 @@ function renderCanvas() {
     if (cameraPreview.paused || cameraPreview.ended) return;
 
     // Draw the video frame to fill the entire canvas
-    // This stretches the video to cover the screen (useful for background effects)
-    ctxBlur.drawImage(cameraPreview, 0, 0, canvasBlur.width, canvasBlur.height);
+    // If this is a front camera, flip horizontally
+    if (window._blurCanvasMirrored) {
+        ctxBlur.save();
+        ctxBlur.translate(canvasBlur.width, 0);
+        ctxBlur.scale(-1, 1);
+        ctxBlur.drawImage(cameraPreview, 0, 0, canvasBlur.width, canvasBlur.height);
+        ctxBlur.restore();
+    } else {
+        ctxBlur.drawImage(cameraPreview, 0, 0, canvasBlur.width, canvasBlur.height);
+    }
 
     // Schedule the next frame
     requestAnimationFrame(renderCanvas);
