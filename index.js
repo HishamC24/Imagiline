@@ -442,7 +442,7 @@ if (!cameraPreview.paused && !cameraPreview.ended) {
 // =========================
 // ==== SHUTTER FULL QUALITY ====
 // =========================
-document.getElementById("shutterButton")?.addEventListener("click", function () {
+document.getElementById("shutter")?.addEventListener("click", function () {
     // Get the video element and original video track settings
     const video = cameraPreview;
     let track = null;
@@ -480,9 +480,23 @@ document.getElementById("shutterButton")?.addEventListener("click", function () 
         ctx.drawImage(video, 0, 0, width, height);
     }
 
+    // Generate filename with current date and time
+    function getDateTimeFilename() {
+        const now = new Date();
+        const pad = (n) => n.toString().padStart(2, '0');
+        const year = now.getFullYear();
+        const month = pad(now.getMonth() + 1);
+        const day = pad(now.getDate());
+        const hour = pad(now.getHours());
+        const min = pad(now.getMinutes());
+        const sec = pad(now.getSeconds());
+        // e.g. Photo_2024-06-01_14-23-45.jpg
+        return `Photo_${year}-${month}-${day}_${hour}-${min}-${sec}.jpg`;
+    }
+
     // Create an image data URL in highest (default is usually PNG or you can explicitly request JPEG)
     // We'll default to JPEG for smaller filesize, highest quality (1.0)
-    captureCanvas.toBlob(function(blob){
+    captureCanvas.toBlob(function (blob) {
         if (!blob) {
             showToast("Failed to capture image");
             return;
@@ -491,7 +505,7 @@ document.getElementById("shutterButton")?.addEventListener("click", function () 
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = "photo.jpg";
+        a.download = getDateTimeFilename();
         document.body.appendChild(a);
         a.click();
         setTimeout(() => {
