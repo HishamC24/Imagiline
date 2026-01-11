@@ -112,6 +112,30 @@ window.addEventListener('resize', updateOrientation);
 
 const cameraPreview = document.getElementById("cameraPreview");
 
+// =========================
+// ==== IMAGE CAPTURE SETUP ====
+// =========================
+let imageCapture = null;
+
+function setupImageCaptureFromStream(stream) {
+    const track = stream.getVideoTracks?.()[0];
+    if (!track) {
+        imageCapture = null;
+        return;
+    }
+
+    if ("ImageCapture" in window) {
+        try {
+            imageCapture = new ImageCapture(track);
+        } catch (e) {
+            console.warn("ImageCapture failed, falling back to canvas", e);
+            imageCapture = null;
+        }
+    } else {
+        imageCapture = null;
+    }
+}
+
 // ======== CAMERA FLIP SUPPORT ========
 let availableVideoDevices = [];
 let currentVideoDeviceIndex = 0;
@@ -281,6 +305,8 @@ async function switchToCamera(deviceId) {
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: { deviceId: { exact: deviceId } } });
         cameraPreview.srcObject = stream;
+        setupImageCaptureFromStream(stream);
+
 
         // After switching camera, set isFrontCamera flag
         // Find the device in our list
@@ -318,11 +344,15 @@ async function switchToCamera(deviceId) {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ video: { deviceId: { exact: device.deviceId } } });
             cameraPreview.srcObject = stream;
+            setupImageCaptureFromStream(stream);
+
         } catch (error) {
             // fallback: try default
             navigator.mediaDevices.getUserMedia({ video: true })
                 .then((stream) => {
                     cameraPreview.srcObject = stream;
+                    setupImageCaptureFromStream(stream);
+
                 })
                 .catch((error) => {
                     console.error("Error accessing the camera: ", error);
@@ -333,6 +363,8 @@ async function switchToCamera(deviceId) {
         navigator.mediaDevices.getUserMedia({ video: true })
             .then((stream) => {
                 cameraPreview.srcObject = stream;
+                setupImageCaptureFromStream(stream);
+
             })
             .catch((error) => {
                 console.error("Error accessing the camera: ", error);
@@ -440,37 +472,55 @@ if (!cameraPreview.paused && !cameraPreview.ended) {
 }
 
 // =========================
-// ==== SHUTTER FULL QUALITY ====
+// ==== SHUTTER FULL QUALITY (SENSOR RES) ====
 // =========================
-document.getElementById("shutter")?.addEventListener("click", function () {
-    // Get the video element and original video track settings
+document.getElementById("shutter")?.addEventListener("click", async function () {
+    // 1️⃣ Try true full-resolution capture first
+    if (imageCapture && imageCapture.takePhoto) {
+        try {
+            const blob = await imageCapture.takePhoto();
+
+            saveCapturedBlob(blob);
+            return;
+        } catch (e) {
+            console.warn("takePhoto failed, falling back to canvas", e);
+        }
+    }
+
+    // 2️⃣ Fallback: canvas capture (Safari / older browsers)
+    fallbackCanvasCapture();
+});
+
+function saveCapturedBlob(blob) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = getDateTimeFilename();
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }, 100);
+}
+
+function fallbackCanvasCapture() {
     const video = cameraPreview;
-    let track = null;
-    if (video.srcObject && video.srcObject.getVideoTracks) {
-        track = video.srcObject.getVideoTracks()[0];
-    }
-    let width, height;
-    if (track && track.getSettings) {
-        const s = track.getSettings();
-        width = s.width;
-        height = s.height;
-    }
-    // Fallback to videoWidth/videoHeight or displayed size
-    width = width || video.videoWidth || video.clientWidth;
-    height = height || video.videoHeight || video.clientHeight;
+
+    let width = video.videoWidth || video.clientWidth;
+    let height = video.videoHeight || video.clientHeight;
 
     if (!width || !height) {
-        showToast("Camera not ready"); return;
+        showToast("Camera not ready");
+        return;
     }
 
-    // Create a canvas in memory at full resolution
-    const captureCanvas = document.createElement("canvas");
-    captureCanvas.width = width;
-    captureCanvas.height = height;
-    const ctx = captureCanvas.getContext("2d");
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d");
 
     if (window._blurCanvasMirrored) {
-        // If mirrored, flip horizontally as in preview
         ctx.save();
         ctx.translate(width, 0);
         ctx.scale(-1, 1);
@@ -480,37 +530,15 @@ document.getElementById("shutter")?.addEventListener("click", function () {
         ctx.drawImage(video, 0, 0, width, height);
     }
 
-    // Generate filename with current date and time
-    function getDateTimeFilename() {
-        const now = new Date();
-        const pad = (n) => n.toString().padStart(2, '0');
-        const year = now.getFullYear();
-        const month = pad(now.getMonth() + 1);
-        const day = pad(now.getDate());
-        const hour = pad(now.getHours());
-        const min = pad(now.getMinutes());
-        const sec = pad(now.getSeconds());
-        // e.g. Photo_2024-06-01_14-23-45.jpg
-        return `Photo_${year}-${month}-${day}_${hour}-${min}-${sec}.jpg`;
-    }
+    canvas.toBlob(
+        (blob) => blob && saveCapturedBlob(blob),
+        "image/jpeg",
+        1.0
+    );
+}
 
-    // Create an image data URL in highest (default is usually PNG or you can explicitly request JPEG)
-    // We'll default to JPEG for smaller filesize, highest quality (1.0)
-    captureCanvas.toBlob(function (blob) {
-        if (!blob) {
-            showToast("Failed to capture image");
-            return;
-        }
-        // Create a download link and click it to save
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = getDateTimeFilename();
-        document.body.appendChild(a);
-        a.click();
-        setTimeout(() => {
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        }, 100);
-    }, "image/jpeg", 1.0);
-});
+function getDateTimeFilename() {
+    const now = new Date();
+    const pad = (n) => n.toString().padStart(2, "0");
+    return `Photo_${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}.jpg`;
+}
