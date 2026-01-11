@@ -273,23 +273,17 @@ async function getAvailableVideoDevices() {
     return devices.filter(device => device.kind === "videoinput");
 }
 
-// Improved getUserMedia to set camera flipping AND High Resolution
+// Improved getUserMedia to set camera flipping
 async function switchToCamera(deviceId) {
     if (cameraPreview.srcObject) {
         cameraPreview.srcObject.getTracks().forEach(track => track.stop());
     }
     try {
-        // REQUEST HIGH RES HERE
-        const stream = await navigator.mediaDevices.getUserMedia({
-            video: {
-                deviceId: { exact: deviceId },
-                width: { ideal: 4096 }, // Forces max width available
-                height: { ideal: 2160 } // Forces max height available
-            }
-        });
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { deviceId: { exact: deviceId } } });
         cameraPreview.srcObject = stream;
 
         // After switching camera, set isFrontCamera flag
+        // Find the device in our list
         let matchingDevice = null;
         for (const device of availableVideoDevices) {
             if (device.deviceId === deviceId) {
@@ -305,10 +299,9 @@ async function switchToCamera(deviceId) {
     }
 }
 
-// Initial load: find and select default camera with High Resolution
+// Initial load: find and select default camera
 (async function initializeCamera() {
     availableVideoDevices = await getAvailableVideoDevices();
-
     // Heuristics: try to find a front camera first
     let preferredIdx = 0;
     for (let i = 0; i < availableVideoDevices.length; ++i) {
@@ -319,32 +312,31 @@ async function switchToCamera(deviceId) {
     }
     currentVideoDeviceIndex = preferredIdx;
     const device = availableVideoDevices[currentVideoDeviceIndex];
-
-    const constraints = {
-        video: {
-            width: { ideal: 4096 },
-            height: { ideal: 2160 }
-        }
-    };
-
     if (device) {
         isFrontCamera = detectIfFrontCamera(device);
         setCameraMirroring(isFrontCamera);
-        constraints.video.deviceId = { exact: device.deviceId };
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { deviceId: { exact: device.deviceId } } });
+            cameraPreview.srcObject = stream;
+        } catch (error) {
+            // fallback: try default
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then((stream) => {
+                    cameraPreview.srcObject = stream;
+                })
+                .catch((error) => {
+                    console.error("Error accessing the camera: ", error);
+                });
+        }
     } else {
-        // Fallback constraint if no specific device found
-        constraints.video.facingMode = "environment";
-    }
-
-    try {
-        const stream = await navigator.mediaDevices.getUserMedia(constraints);
-        cameraPreview.srcObject = stream;
-    } catch (error) {
-        console.error("Error accessing the camera: ", error);
-        // Desperate fallback if high-res failed
+        // fallback: try default
         navigator.mediaDevices.getUserMedia({ video: true })
-            .then((stream) => { cameraPreview.srcObject = stream; })
-            .catch((e) => console.error("Final fallback failed", e));
+            .then((stream) => {
+                cameraPreview.srcObject = stream;
+            })
+            .catch((error) => {
+                console.error("Error accessing the camera: ", error);
+            });
     }
 })();
 
