@@ -13,10 +13,10 @@
 
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <script src="//cdn.jsdelivr.net/npm/eruda"></script>
+    <!-- <script src="//cdn.jsdelivr.net/npm/eruda"></script>
     <script>
       eruda.init();
-    </script>
+    </script> -->
   </head>
   <body>
     <canvas id="video-blur"></canvas>
@@ -99,6 +99,26 @@
       <div id="bottom">
         <div class="left glassy button">
           <svg
+            id="gridLinesToggle"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+            <path d="M3 8h18" />
+            <path d="M3 16h18" />
+            <path d="M8 3v18" />
+            <path d="M16 3v18" />
+          </svg>
+        </div>
+
+        <div id="shutter"></div>
+
+        <div class="right glassy button">
+          <svg
             id="rotateCamera"
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 24 24"
@@ -114,26 +134,6 @@
             <path d="M11.245 15.904a3 3 0 0 0 3.755 -2.904m-2.25 -2.905a3 3 0 0 0 -3.75 2.905" />
             <path d="M14 13h2v2" />
             <path d="M10 13h-2v-2" />
-          </svg>
-        </div>
-
-        <div id="shutter"></div>
-
-        <div class="right glassy button">
-          <svg
-            id="gridLinesToggle"
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke-width="1.5"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-            <path d="M3 8h18" />
-            <path d="M3 16h18" />
-            <path d="M8 3v18" />
-            <path d="M16 3v18" />
           </svg>
         </div>
       </div>

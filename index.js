@@ -438,3 +438,65 @@ cameraPreview.addEventListener("play", () => {
 if (!cameraPreview.paused && !cameraPreview.ended) {
     renderCanvas();
 }
+
+// =========================
+// ==== SHUTTER FULL QUALITY ====
+// =========================
+document.getElementById("shutterButton")?.addEventListener("click", function () {
+    // Get the video element and original video track settings
+    const video = cameraPreview;
+    let track = null;
+    if (video.srcObject && video.srcObject.getVideoTracks) {
+        track = video.srcObject.getVideoTracks()[0];
+    }
+    let width, height;
+    if (track && track.getSettings) {
+        const s = track.getSettings();
+        width = s.width;
+        height = s.height;
+    }
+    // Fallback to videoWidth/videoHeight or displayed size
+    width = width || video.videoWidth || video.clientWidth;
+    height = height || video.videoHeight || video.clientHeight;
+
+    if (!width || !height) {
+        showToast("Camera not ready"); return;
+    }
+
+    // Create a canvas in memory at full resolution
+    const captureCanvas = document.createElement("canvas");
+    captureCanvas.width = width;
+    captureCanvas.height = height;
+    const ctx = captureCanvas.getContext("2d");
+
+    if (window._blurCanvasMirrored) {
+        // If mirrored, flip horizontally as in preview
+        ctx.save();
+        ctx.translate(width, 0);
+        ctx.scale(-1, 1);
+        ctx.drawImage(video, 0, 0, width, height);
+        ctx.restore();
+    } else {
+        ctx.drawImage(video, 0, 0, width, height);
+    }
+
+    // Create an image data URL in highest (default is usually PNG or you can explicitly request JPEG)
+    // We'll default to JPEG for smaller filesize, highest quality (1.0)
+    captureCanvas.toBlob(function(blob){
+        if (!blob) {
+            showToast("Failed to capture image");
+            return;
+        }
+        // Create a download link and click it to save
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = "photo.jpg";
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }, 100);
+    }, "image/jpeg", 1.0);
+});
