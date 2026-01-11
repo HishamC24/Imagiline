@@ -164,10 +164,6 @@ svg {
 }
 
 #video-blur {
-  /* top: 0; */
-  /* left: 0; */
-  /* object-fit: cover; */
-
   position: fixed;
   inset: 0;
   width: 100dvw;
@@ -176,4 +172,7 @@ svg {
   pointer-events: none;
   /* filter: blur(64px); */
   transform: scale(1.25);
+  /* top: 0; */
+  /* left: 0; */
+  /* object-fit: cover; */
 }
