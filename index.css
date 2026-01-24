@@ -163,6 +163,10 @@ svg {
   opacity: 50%;
 }
 
+#imagePreview:not([src]) {
+  display: none;
+}
+
 #video-blur {
   position: fixed;
   inset: 0;
