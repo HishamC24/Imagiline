@@ -1,8 +1,8 @@
 function updateOrientation() {
     let orientation = 0;
-    if (window.screen && window.screen.orientation && typeof window.screen.orientation.angle === 'number') {
+    if (window.screen && window.screen.orientation && typeof window.screen.orientation.angle === "number") {
         orientation = window.screen.orientation.angle;
-    } else if (typeof window.orientation === 'number') {
+    } else if (typeof window.orientation === "number") {
         orientation = window.orientation;
     } else {
         if (window.innerWidth > window.innerHeight) {
@@ -37,13 +37,13 @@ const overlayIds = ["overlayInvisible", "overlayVisible"];
 const opacities = [0, 0.25, 0.5, 0.75];
 window._imageOpacityControls = {
     opacities,
-    currentOpacityIndex: 2 // Start at 0.5 (50%)
+    currentOpacityIndex: 2, // Start at 0.5 (50%)
 };
 
 // Helper: Check if an image has been uploaded to imagePreview
 function isImageUploaded() {
     const imagePreview = document.getElementById("imagePreview");
-    return !!(imagePreview && imagePreview.src && imagePreview.src.length > 0 && !imagePreview.src.startsWith('blob:null')); // blob:null covers some browsers' reset state
+    return !!(imagePreview && imagePreview.src && imagePreview.src.length > 0 && !imagePreview.src.startsWith("blob:null")); // blob:null covers some browsers' reset state
 }
 
 // Set image opacity based on global currentOpacityIndex
@@ -107,8 +107,8 @@ function updateOverlayVisibility() {
 // Run overlay/init setup
 updateOverlayVisibility();
 updateOrientation();
-window.addEventListener('orientationchange', updateOrientation);
-window.addEventListener('resize', updateOrientation);
+window.addEventListener("orientationchange", updateOrientation);
+window.addEventListener("resize", updateOrientation);
 
 const cameraPreview = document.getElementById("cameraPreview");
 
@@ -148,11 +148,7 @@ function detectIfFrontCamera(device) {
     // Common cues in Android/iOS/PC, not perfect but standard
     // Also include "user" for web standard, though not always presented
     const label = device.label.toLowerCase();
-    if (
-        label.includes("front") ||
-        label.includes("user") ||
-        label.includes("facing") && !label.includes("back") && !label.includes("rear")
-    ) {
+    if (label.includes("front") || label.includes("user") || (label.includes("facing") && !label.includes("back") && !label.includes("rear"))) {
         return true;
     }
     return false;
@@ -161,14 +157,14 @@ function detectIfFrontCamera(device) {
 // To control camera flipping visually
 function setCameraMirroring(frontCamera) {
     // Flip <video> via CSS transform (mirrors live preview for user)
-    cameraPreview.style.transform = frontCamera ? 'scaleX(-1)' : '';
+    cameraPreview.style.transform = frontCamera ? "scaleX(-1)" : "";
     // Optionally make canvas replication (blur background) match
     window._blurCanvasMirrored = !!frontCamera;
 }
 
 // Create and append the gridlines canvas (overlay for grid lines)
 let gridLinesVisible = false;
-const gridCanvas = document.createElement('canvas');
+const gridCanvas = document.createElement("canvas");
 gridCanvas.id = "gridLinesOverlay";
 Object.assign(gridCanvas.style, {
     position: "absolute",
@@ -178,7 +174,7 @@ Object.assign(gridCanvas.style, {
     height: "100%",
     pointerEvents: "none",
     zIndex: 2000,
-    display: "none"
+    display: "none",
 });
 cameraPreview.parentNode.appendChild(gridCanvas);
 
@@ -261,7 +257,7 @@ function showToast(message) {
     Object.assign(toast.style, {
         position: "fixed",
         left: "50%",
-        bottom: "1rem",
+        bottom: "16px",
         transform: "translateX(-50%)",
         background: "rgba(0,0,0,0.25)",
         color: "#ffffff",
@@ -277,7 +273,7 @@ function showToast(message) {
         justifyContent: "center",
         textAlign: "center",
         padding: "0px 16px",
-        fontFamily: "\"San Fransisco\", sans-serif"
+        fontFamily: '"San Fransisco", sans-serif',
     });
     document.body.appendChild(toast);
     setTimeout(() => {
@@ -294,19 +290,18 @@ function showToast(message) {
 
 async function getAvailableVideoDevices() {
     const devices = await navigator.mediaDevices.enumerateDevices();
-    return devices.filter(device => device.kind === "videoinput");
+    return devices.filter((device) => device.kind === "videoinput");
 }
 
 // Improved getUserMedia to set camera flipping
 async function switchToCamera(deviceId) {
     if (cameraPreview.srcObject) {
-        cameraPreview.srcObject.getTracks().forEach(track => track.stop());
+        cameraPreview.srcObject.getTracks().forEach((track) => track.stop());
     }
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: { deviceId: { exact: deviceId } } });
         cameraPreview.srcObject = stream;
         setupImageCaptureFromStream(stream);
-
 
         // After switching camera, set isFrontCamera flag
         // Find the device in our list
@@ -345,14 +340,13 @@ async function switchToCamera(deviceId) {
             const stream = await navigator.mediaDevices.getUserMedia({ video: { deviceId: { exact: device.deviceId } } });
             cameraPreview.srcObject = stream;
             setupImageCaptureFromStream(stream);
-
         } catch (error) {
             // fallback: try default
-            navigator.mediaDevices.getUserMedia({ video: true })
+            navigator.mediaDevices
+                .getUserMedia({ video: true })
                 .then((stream) => {
                     cameraPreview.srcObject = stream;
                     setupImageCaptureFromStream(stream);
-
                 })
                 .catch((error) => {
                     console.error("Error accessing the camera: ", error);
@@ -360,11 +354,11 @@ async function switchToCamera(deviceId) {
         }
     } else {
         // fallback: try default
-        navigator.mediaDevices.getUserMedia({ video: true })
+        navigator.mediaDevices
+            .getUserMedia({ video: true })
             .then((stream) => {
                 cameraPreview.srcObject = stream;
                 setupImageCaptureFromStream(stream);
-
             })
             .catch((error) => {
                 console.error("Error accessing the camera: ", error);
@@ -432,8 +426,8 @@ const ctxBlur = canvasBlur.getContext("2d");
 
 // 1. Ensure the canvas internal resolution matches the display size
 function resizeCanvas() {
-    canvasBlur.width = window.innerWidth;
-    canvasBlur.height = window.innerHeight;
+    canvasBlur.width = window.innerWidth + 400;
+    canvasBlur.height = window.innerHeight + 400;
 }
 
 // Listen for window resize to update canvas dimensions
@@ -530,15 +524,13 @@ function fallbackCanvasCapture() {
         ctx.drawImage(video, 0, 0, width, height);
     }
 
-    canvas.toBlob(
-        (blob) => blob && saveCapturedBlob(blob),
-        "image/jpeg",
-        1.0
-    );
+    canvas.toBlob((blob) => blob && saveCapturedBlob(blob), "image/jpeg", 1.0);
 }
 
 function getDateTimeFilename() {
     const now = new Date();
     const pad = (n) => n.toString().padStart(2, "0");
-    return `Photo_${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}.jpg`;
+    return `Photo_${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(
+        now.getSeconds()
+    )}.jpg`;
 }
